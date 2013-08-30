@@ -1,10 +1,9 @@
 {
   "name": "i18n-middleware",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "I18N middleware for expressjs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
@@ -16,7 +15,10 @@
     "middleware"
   ],
   "author": "sailxjx",
-  "license": "MIT",
+  "license": {
+    "type": "MIT",
+    "url": "http://sailxjx.mit-license.org/"
+  },
   "bugs": {
     "url": "https://github.com/sailxjx/i18n-middleware/issues"
   },
@@ -24,7 +26,8 @@
     "i18n": "~0.4.1",
     "underscore": "~1.5.1",
     "async": "~0.2.9",
-    "mkdirp": "~0.3.5"
+    "mkdirp": "~0.3.5",
+    "graceful-fs": "~2.0.0"
   },
   "devDependencies": {
     "cake-dog": "~0.1.11"

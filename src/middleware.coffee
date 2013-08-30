@@ -1,5 +1,5 @@
 path = require('path')
-fs = require('fs')
+fs = require('graceful-fs')
 url = require('url')
 i18n = require('i18n')
 _ = require('underscore')
@@ -15,7 +15,7 @@ class I18nMiddleware
       cookie: 'lang'
       directory: "#{process.cwd()}/src/locales"
       src: "#{process.cwd()}/src"
-      tmp: "#{process.cwd()}/.locales"
+      tmp: "#{process.cwd()}/tmp/i18n"
       grepExts: /(\.js|\.html)$/
       testExts: ['.coffee', '.html']
       pattern: /\{\{__([\s\S]+?)\}\}/g
@@ -23,8 +23,9 @@ class I18nMiddleware
       options or {}
     )
     i18n.configure(@options)
+    @i18n = i18n
 
-  # ops: filePath, destPath, ext, lang
+  # ops: filePath, destPath, lang
   compile: (ops, callback = ->) ->
     options = @options
     ops = ops
@@ -75,7 +76,6 @@ class I18nMiddleware
             _options = {
               filePath: filePath
               destPath: destPath
-              ext: _ext
               lang: lang
             }
 
