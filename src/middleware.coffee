@@ -24,11 +24,43 @@ class I18nMiddleware
     )
     i18n.configure(@options)
 
+  # ops: filePath, destPath, decorator, ext, lang
+  compile: (ops, callback = ->) ->
+    options = @options
+    ops = ops
+
+    _compile = ->
+      fs.readFile ops.filePath, 'utf8', (err, content) ->
+        return callback() if err?  # file missing
+        content = content.replace options.pattern or /$^/, (m, code) ->
+          result = i18n.__({phrase: code, locale: ops.lang})
+          return if result then ops.decorator(ops.ext)(result) else code
+
+        mkdirp path.dirname(ops.destPath), '0755', (err) ->
+          return callback() if err?
+          fs.writeFile(ops.destPath, content, 'utf8', callback)
+
+    return _compile() if options.force
+
+    fs.stat ops.filePath, (err, srcStat) ->
+      return callback() if err?
+      fs.stat ops.destPath, (err, destStat) ->
+        if err
+          if err.code is 'ENOENT'
+            _compile()
+          else
+            return callback()
+        else
+          if srcStat.mtime > destStat.mtime
+            _compile()
+          else
+            callback()
+
   middleware: ->
     options = @options
 
     _middleware = (req, res, next) =>
-      i18n.init req, res, ->
+      i18n.init req, res, =>
         lang = i18n.getLocale(req)
         pathname = url.parse(req.url).pathname
         tmpPath = "#{options.tmp}/#{lang}"
@@ -40,38 +72,21 @@ class I18nMiddleware
               when '.js', '.coffee' then return (code) -> return "'#{code}'"
               else return (code) -> return code
 
-          async.each options.testExts, ((_ext, _next) ->
+          async.each options.testExts, ((_ext, _next) =>
             fileRelPath = pathname.replace(options.grepExts, _ext)
             filePath = path.join(options.src, fileRelPath)
             destPath = "#{options.tmp}/#{lang}#{fileRelPath}"
 
-            _compile = ->
-              fs.readFile filePath, 'utf8', (err, content) ->
-                return _next() if err?  # file missing
+            _options = {
+              filePath: filePath
+              destPath: destPath
+              decorator: _decorator
+              ext: _ext
+              lang: lang
+            }
 
-                content = content.replace options.pattern or /$^/, (m, code) ->
-                  result = i18n.__({phrase: code, locale: lang})
-                  return if result then _decorator(_ext)(result) else code
+            @compile(_options, _next)
 
-                mkdirp path.dirname(destPath), '0755', (err) ->
-                  return _next() if err?
-                  fs.writeFile(destPath, content, 'utf8', _next)
-
-            return _compile() if options.force
-
-            fs.stat filePath, (err, srcStat) ->
-              return _next() if err?
-              fs.stat destPath, (err, destStat) ->
-                if err
-                  if err.code is 'ENOENT'
-                    _compile()
-                  else
-                    return _next()
-                else
-                  if srcStat.mtime > destStat.mtime
-                    _compile()
-                  else
-                    _next()
             ), (err) ->
             next()
         else
@@ -80,9 +95,12 @@ class I18nMiddleware
     return _middleware
 
 i18nMiddleware = (options) ->
-  @version = '0.0.1'
   middleware = new I18nMiddleware(options)
   @options = middleware.options
   return middleware.middleware()
+
+i18nMiddleware.Class = I18nMiddleware
+
+i18nMiddleware.version = '0.0.1'
 
 module.exports = i18nMiddleware

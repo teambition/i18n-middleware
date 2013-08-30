@@ -1,6 +1,6 @@
 {
   "name": "i18n-middleware",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "I18N middleware for expressjs",
   "main": "index.js",
   "scripts": {
