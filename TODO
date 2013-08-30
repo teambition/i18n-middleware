@@ -1,0 +1,2 @@
+* i18n-cli.format: auto format source code text to tags
+* i18n-cli.revert: revert source code tags to plain text
