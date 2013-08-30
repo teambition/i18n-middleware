@@ -2,7 +2,7 @@ i18n-middleware
 ------
 I18N middleware for expressjs
 
-Usage:
+# Usage:
 
 ## middleware
 
