@@ -24,7 +24,7 @@ class I18nMiddleware
     )
     i18n.configure(@options)
 
-  # ops: filePath, destPath, decorator, ext, lang
+  # ops: filePath, destPath, ext, lang
   compile: (ops, callback = ->) ->
     options = @options
     ops = ops
@@ -34,7 +34,7 @@ class I18nMiddleware
         return callback() if err?  # file missing
         content = content.replace options.pattern or /$^/, (m, code) ->
           result = i18n.__({phrase: code, locale: ops.lang})
-          return if result then ops.decorator(ops.ext)(result) else code
+          return result or code
 
         mkdirp path.dirname(ops.destPath), '0755', (err) ->
           return callback() if err?
@@ -67,11 +67,6 @@ class I18nMiddleware
 
         if matches = pathname.match(options.grepExts)
 
-          _decorator = (ext) ->
-            switch ext
-              when '.js', '.coffee' then return (code) -> return "'#{code}'"
-              else return (code) -> return code
-
           async.each options.testExts, ((_ext, _next) =>
             fileRelPath = pathname.replace(options.grepExts, _ext)
             filePath = path.join(options.src, fileRelPath)
@@ -80,7 +75,6 @@ class I18nMiddleware
             _options = {
               filePath: filePath
               destPath: destPath
-              decorator: _decorator
               ext: _ext
               lang: lang
             }
