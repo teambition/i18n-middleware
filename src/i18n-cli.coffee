@@ -2,8 +2,31 @@ i18n = require('i18n')
 fs = require('graceful-fs')
 path = require('path')
 {exec} = require('child_process')
-I18nMiddleware = require('./middleware').Class
+{I18nMiddleware} = require('./middleware')
 async  = require('async')
+logger = require('graceful-logger')
+_ = require('underscore')
+
+errorQuit = ->
+  logger.err.apply(logger, arguments)
+  process.exit()
+
+quote = (text) ->
+  return text.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&")
+
+findAllFiles = (filePaths, patterns, callback) ->
+  findCmds = []
+  for filePath in filePaths
+    for pattern in patterns
+      findCmds.push("find #{filePath} -name '#{pattern}'")
+  findResults = []
+  async.each findCmds, ((findCmd, next) ->
+    exec findCmd, (err, result) ->
+      return next(err) if err?
+      findResults = findResults.concat(result.trim().split("\n")) if result.length > 0
+      next()
+    ), (err) ->
+    callback(err, findResults)
 
 class I18nCli
 
@@ -19,10 +42,32 @@ class I18nCli
     @[@action]()
 
   # switch to i18n regex format
-  format: ->
+  format: (revert = false) ->
+    [lang] = @args
+    return errorQuit('missing language option') unless lang?
+    i18nMiddleware = new I18nMiddleware()
+    _i18n = i18nMiddleware.i18n
+    dict = _i18n.getCatalog(lang)
+    return errorQuit("missing language locales file [#{lang}.json]") unless dict
+    srcs = ['src/scripts', 'src/templates']
+    textExts = ['*.coffee', '*.html']
+
+    findAllFiles srcs, textExts, (err, files) ->
+      return errorQuit(err) if err?
+      async.each files, ((file, next) ->
+        fs.readFile file, 'utf8', (err, text) ->
+          for tag, raw of dict
+            if revert  # revert the raw, tag order
+              text = text.replace(new RegExp(quote("{{__#{tag}}}")), raw)
+            else
+              text = text.replace(new RegExp(raw, 'g'), "{{__#{tag}}}")
+          fs.writeFile(file, text, next)
+        ), (err) ->
+        logger.info("#{if revert then 'revert' else 'format'} finish")
 
   # revert to plain texts
   revert: ->
+    @format(true)
 
   # compile all source code to converted format
   compile: ->
@@ -31,7 +76,7 @@ class I18nCli
     directory = "#{process.cwd()}/src/locales"
     srcs = ['src/scripts', 'src/templates']
     destDir = "#{process.cwd()}/tmp/i18n"
-    testExts = ['.coffee', '.html']
+    textExts = ['*.coffee', '*.html']
 
     options = {}
     options.force = true
@@ -40,46 +85,30 @@ class I18nCli
     i18nMiddleware = new I18nMiddleware(options)
 
     _compile = (lang, callback = ->) ->
-      # Who can read these codes below? hiahiahia
-      async.each srcs, ((src, next) ->
-
-        async.each testExts, ((ext, _next) ->
-
-          exec "find #{src} -name '*#{ext}'", (err, result) ->
-            return _next(err) if err?
-
-            async.each result.trim().split("\n"), ((file, __next) ->
-
-              console.log "file: #{file}"
-
-              i18nMiddleware.compile({
-                filePath: file
-                destPath: path.join(destDir, lang, path.relative('src', file))
-                lang: lang
-              }, __next)
-
-              ), (err) ->
-              _next(err)
-
+      findAllFiles srcs, textExts, (err, files) ->
+        return errorQuit if err?
+        async.each files, ((file, next) ->
+          logger.info(file)
+          i18nMiddleware.compile({
+            filePath: file
+            destPath: path.join(destDir, lang, path.relative('src', file))
+            lang: lang
+            }, next)
           ), (err) ->
-          next(err)
+          callback(err)
 
-        ), (err) ->
-        callback(err)
-
-    # _compile(lang)
     if lang is 'all'
       fs.readdir directory, (err, langFiles) ->
-        throw err if err?
+        errorQuit(err) if err?
         async.each langFiles, ((langFile, next) ->
           _compile(langFile[..langFile.length-path.extname(langFile).length-1], next)
           ), (err) ->
-          throw err if err?
-          console.log "i18n compile finish"
+          errorQuit(err) if err?
+          logger.info("i18n compile finish")
     else
       _compile lang, (err) ->
-        throw err if err?
-        console.log "i18n compile finish"
+        errorQuit(err) if err?
+        logger.info("i18n compile finish")
 
   help: ->
     console.log '''

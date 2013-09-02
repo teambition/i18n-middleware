@@ -1,10 +1,9 @@
 {
   "name": "i18n-middleware",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "I18N middleware for expressjs",
   "main": "index.js",
-  "scripts": {
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "https://github.com/sailxjx/i18n-middleware"
@@ -27,7 +26,8 @@
     "underscore": "~1.5.1",
     "async": "~0.2.9",
     "mkdirp": "~0.3.5",
-    "graceful-fs": "~2.0.0"
+    "graceful-fs": "~2.0.0",
+    "graceful-logger": "~0.0.2"
   },
   "devDependencies": {
     "cake-dog": "~0.1.11"

@@ -10,7 +10,6 @@ class I18nMiddleware
 
   constructor: (options) ->
     @options = _.extend(
-      locales: ['en']
       defaultLocale: 'en'
       cookie: 'lang'
       directory: "#{process.cwd()}/src/locales"
@@ -20,8 +19,15 @@ class I18nMiddleware
       testExts: ['.coffee', '.html']
       pattern: /\{\{__([\s\S]+?)\}\}/g
       force: false
+      updateFiles: false
       options or {}
     )
+    unless @options.locales
+      try
+        langFiles = fs.readdirSync(@options.directory)
+        @options.locales = (f[..f.length-path.extname(f).length-1] for f in langFiles)
+      catch
+        @options.locales = []
     i18n.configure(@options)
     @i18n = i18n
 
@@ -93,7 +99,7 @@ i18nMiddleware = (options) ->
   @options = middleware.options
   return middleware.middleware()
 
-i18nMiddleware.Class = I18nMiddleware
+i18nMiddleware.I18nMiddleware = I18nMiddleware
 
 i18nMiddleware.version = '0.0.1'
 
