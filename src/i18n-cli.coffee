@@ -116,6 +116,8 @@ class I18nCli
 
       Actions:
         compile      compile source files to the chosen language, or compile to any language with [all] option
+        format       auto format raw text to tags
+        revert       revert tags to plain text
         help         display the help message
 
       Options:
@@ -124,6 +126,8 @@ class I18nCli
       Example:
         i18n-cli compile en     # compile source code to English
         i18n-cli compile all    # compile source code to all language defined in the locales directory
+        i18n-cli format zh-CN   # compile source code which written in Chinese to i18n tags
+        i18n-cli revert zh-CN   # revert i18n tags in source code to plain Chinese
     '''
 
 i18nCli = ->
