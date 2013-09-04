@@ -71,11 +71,12 @@ class I18nCli
 
   # compile all source code to converted format
   compile: ->
-    [lang] = @args
+    [lang, directory, src, destDir] = @args
     lang = lang or 'all'
-    directory = "#{process.cwd()}/src/locales"
-    srcs = ['src/scripts', 'src/templates']
-    destDir = "#{process.cwd()}/tmp/i18n"
+    directory = directory or "#{process.cwd()}/src/locales"
+    src = src or 'src'
+    destDir = destDir or "#{process.cwd()}/tmp/i18n"
+    ignores = ignores?.split(',') or ['node_modules', 'bower_components', 'bower.json', 'package.json', 'locales', 'images']
     textExts = ['*.coffee', '*.html']
 
     options = {}
@@ -84,14 +85,20 @@ class I18nCli
 
     i18nMiddleware = new I18nMiddleware(options)
 
+    _getDest = (lang, file) ->
+      return path.join(destDir, lang, file.slice(src.length))
+
     _compile = (lang, callback = ->) ->
-      findAllFiles srcs, textExts, (err, files) ->
+      findAllFiles [src], textExts, (err, files) ->
         return errorQuit if err?
         async.each files, ((file, next) ->
+          for ignore in ignores
+            if file.indexOf(path.join(src, ignore)) is 0
+              return next()
           logger.info(file)
           i18nMiddleware.compile({
             filePath: file
-            destPath: path.join(destDir, lang, path.relative('src', file))
+            destPath: _getDest(lang, file)
             lang: lang
             }, next)
           ), (err) ->
