@@ -63,37 +63,56 @@ class I18nMiddleware
           else
             callback()
 
+  _guessLanguage: (req, res, next) ->
+    languageHeader = req.headers['accept-language']
+    languages = []
+    if languageHeader?
+      languageHeader.split(',').every (l) =>
+        lang = l.split(';')[0]
+        subLang = lang.split('-')[0]
+        if lang in @options.locales
+          @options.defaultLocale = lang
+          return false
+        if subLang in @options.locales
+          @options.defaultLocale = lang
+          return false
+        return true
+    next()
+
   middleware: ->
     options = @options
 
     _middleware = (req, res, next) =>
       i18n.init req, res, =>
-        lang = i18n.getLocale(req)
-        lang = if lang in options.locales then lang else 'en'
-        i18n.setLocale(req, lang)
+        @_guessLanguage req, res, =>
+          lang = i18n.getLocale(req)
+          lang = if lang in options.locales then lang else @options.defaultLocale
+          lang = lang or 'en'
 
-        pathname = url.parse(req.url).pathname
-        tmpPath = "#{options.tmp}/#{lang}"
+          i18n.setLocale(req, lang)
 
-        if matches = pathname.match(options.grepExts)
+          pathname = url.parse(req.url).pathname
+          tmpPath = "#{options.tmp}/#{lang}"
 
-          async.each options.testExts, ((_ext, _next) =>
-            fileRelPath = pathname.replace(options.grepExts, _ext)
-            filePath = path.join(options.src, fileRelPath)
-            destPath = "#{options.tmp}/#{lang}#{fileRelPath}"
+          if matches = pathname.match(options.grepExts)
 
-            _options = {
-              filePath: filePath
-              destPath: destPath
-              lang: lang
-            }
+            async.each options.testExts, ((_ext, _next) =>
+              fileRelPath = pathname.replace(options.grepExts, _ext)
+              filePath = path.join(options.src, fileRelPath)
+              destPath = "#{options.tmp}/#{lang}#{fileRelPath}"
 
-            @compile(_options, _next)
+              _options = {
+                filePath: filePath
+                destPath: destPath
+                lang: lang
+              }
 
-            ), (err) ->
+              @compile(_options, _next)
+
+              ), (err) ->
+              next()
+          else
             next()
-        else
-          next()
 
     return _middleware
 
