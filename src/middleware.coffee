@@ -69,6 +69,7 @@ class I18nMiddleware
     _middleware = (req, res, next) =>
       i18n.init req, res, =>
         lang = i18n.getLocale(req)
+        lang = if lang in options.locales then lang else 'en'
         i18n.setLocale(req, lang)
 
         pathname = url.parse(req.url).pathname
