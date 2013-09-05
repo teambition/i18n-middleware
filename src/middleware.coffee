@@ -63,65 +63,82 @@ class I18nMiddleware
           else
             callback()
 
-  _guessLanguage: (req, res, next) ->
+  guessLanguage: (req, res = null, next = ->) =>
     languageHeader = req.headers['accept-language']
-    languages = []
-    if languageHeader?
+    language = null
+
+    if @options.cookie? # Guess from cookie
+      if req.cookies?.lang?
+        language = req.cookies[@options.cookie] if req.cookies[@options.cookie] in @options.locales
+      else if req.headers?.cookie?
+        req.headers.cookie.split(';').every (cookieString) =>
+          [key, val] = cookieString.split('=')
+          if key is @options.cookie
+            language = val if val in  @options.locales
+            return false
+          return true
+
+    if languageHeader? and not language?
       languageHeader.split(',').every (l) =>
         lang = l.split(';')[0]
         subLang = lang.split('-')[0]
         if lang in @options.locales
-          @options.defaultLocale = lang
+          language = lang
           return false
         if subLang in @options.locales
-          @options.defaultLocale = lang
+          language = subLang
           return false
         return true
+
+    @_language = language or @options.defaultLocale
+
+    req.locale = @_language or ''
+
     next()
+
+  guess: (req) =>
+    unless @_language?
+      @guessLanguage(req)
+    return @_language
 
   middleware: ->
     options = @options
 
     _middleware = (req, res, next) =>
       i18n.init req, res, =>
-        @_guessLanguage req, res, =>
-          lang = i18n.getLocale(req)
-          lang = if lang in options.locales then lang else @options.defaultLocale
-          lang = lang or 'en'
+        lang = @guess(req)
+        i18n.setLocale(req, lang) if lang
 
-          i18n.setLocale(req, lang)
+        pathname = url.parse(req.url).pathname
+        tmpPath = "#{options.tmp}/#{lang}"
 
-          pathname = url.parse(req.url).pathname
-          tmpPath = "#{options.tmp}/#{lang}"
-
-          if matches = pathname.match(options.grepExts)
-
-            async.each options.testExts, ((_ext, _next) =>
-              fileRelPath = pathname.replace(options.grepExts, _ext)
-              filePath = path.join(options.src, fileRelPath)
-              destPath = "#{options.tmp}/#{lang}#{fileRelPath}"
-
-              _options = {
-                filePath: filePath
-                destPath: destPath
-                lang: lang
-              }
-
-              @compile(_options, _next)
-
-              ), (err) ->
-              next()
-          else
+        if matches = pathname.match(options.grepExts)
+          async.each options.testExts, ((_ext, _next) =>
+            fileRelPath = pathname.replace(options.grepExts, _ext)
+            filePath = path.join(options.src, fileRelPath)
+            destPath = "#{options.tmp}/#{lang}#{fileRelPath}"
+            _options = {
+              filePath: filePath
+              destPath: destPath
+              lang: lang
+            }
+            @compile(_options, _next)
+            ), (err) ->
             next()
+        else
+          next()
 
     return _middleware
 
 i18nMiddleware = (options) ->
   middleware = new I18nMiddleware(options)
-  @options = middleware.options
   return middleware.middleware()
 
 i18nMiddleware.I18nMiddleware = I18nMiddleware
+
+i18nMiddleware.guessLanguage = (options) ->
+  middleware = new I18nMiddleware(options)
+  return middleware.guessLanguage
 
 i18nMiddleware.version = '0.0.1'
 
