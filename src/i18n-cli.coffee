@@ -95,7 +95,6 @@ class I18nCli
           for ignore in ignores
             if file.indexOf(path.join(src, ignore)) is 0
               return next()
-          logger.info(file)
           i18nMiddleware.compile({
             filePath: file
             destPath: _getDest(lang, file)
