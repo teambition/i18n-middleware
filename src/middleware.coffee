@@ -97,8 +97,7 @@ class I18nMiddleware
     next()
 
   guess: (req) =>
-    unless @_language?
-      @guessLanguage(req)
+    @guessLanguage(req)
     return @_language
 
   middleware: ->
