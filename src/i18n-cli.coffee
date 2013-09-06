@@ -52,11 +52,23 @@ class I18nCli
     srcs = ['src/scripts', 'src/templates']
     textExts = ['*.coffee', '*.html']
 
+    revDict = {}
+    $revDict = {}
+    raws = []
+    for k, v of dict
+      raws.push(v)
+      revDict[v] = k
+
+    raws.sort (x, y) ->
+      return y.length - x.length
+
+    $revDict[v] = revDict[v] for i, v of raws
+
     findAllFiles srcs, textExts, (err, files) ->
       return errorQuit(err) if err?
       async.each files, ((file, next) ->
         fs.readFile file, 'utf8', (err, text) ->
-          for tag, raw of dict
+          for raw, tag of $revDict
             if revert  # revert the raw, tag order
               text = text.replace(new RegExp(quote("{{__#{tag}}}")), raw)
             else
