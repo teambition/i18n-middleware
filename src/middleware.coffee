@@ -1,7 +1,6 @@
 path = require('path')
 fs = require('graceful-fs')
 url = require('url')
-i18n = require('i18n')
 _ = require('underscore')
 async = require('async')
 mkdirp = require('mkdirp')
@@ -28,19 +27,48 @@ class I18nMiddleware
         @options.locales = (f[..f.length-path.extname(f).length-1] for f in langFiles)
       catch
         @options.locales = []
-    i18n.configure(@options)
-    @i18n = i18n
+    @init()
+
+  init: ->
+    @loadDict()
+
+  _dict: (locale, dictPath) ->
+    options = @options
+    dictPath = path.join(process.cwd(), dictPath) if dictPath?
+    try
+      dict = require(path.join(dictPath or options.directory, locale))
+    catch e
+      dict = {}
+    for k, v of dict
+      if k is '@include'
+        for dictPath in v
+          dict = _.extend(dict, @_dict(locale, dictPath))
+    delete dict['@include']
+    return dict
+
+  loadDict: ->
+    @dicts = {}
+    options = @options
+    {locales} = options
+    locales = locales or [@options.defaultLocale]
+    for locale in locales
+      @dicts[locale] = @_dict(locale)
+    return @dicts
+
+  __: (param) ->
+    {phrase, locale} = param
+    return @dicts[locale][phrase]
 
   # ops: filePath, destPath, lang
   compile: (ops, callback = ->) ->
     options = @options
     ops = ops
 
-    _compile = ->
-      fs.readFile ops.filePath, 'utf8', (err, content) ->
+    _compile = =>
+      fs.readFile ops.filePath, 'utf8', (err, content) =>
         return callback() if err?  # file missing
-        content = content.replace options.pattern or /$^/, (m, code) ->
-          result = i18n.__({phrase: code, locale: ops.lang})
+        content = content.replace options.pattern or /$^/, (m, code) =>
+          result = @__({phrase: code, locale: ops.lang})
           return result or code
 
         mkdirp path.dirname(ops.destPath), '0755', (err) ->
@@ -104,28 +132,25 @@ class I18nMiddleware
     options = @options
 
     _middleware = (req, res, next) =>
-      i18n.init req, res, =>
-        lang = @guess(req)
-        i18n.setLocale(req, lang) if lang
+      lang = @guess(req)
+      pathname = url.parse(req.url).pathname
+      tmpPath = "#{options.tmp}/#{lang}"
 
-        pathname = url.parse(req.url).pathname
-        tmpPath = "#{options.tmp}/#{lang}"
-
-        if matches = pathname.match(options.grepExts)
-          async.each options.testExts, ((_ext, _next) =>
-            fileRelPath = pathname.replace(options.grepExts, _ext)
-            filePath = path.join(options.src, fileRelPath)
-            destPath = "#{options.tmp}/#{lang}#{fileRelPath}"
-            _options = {
-              filePath: filePath
-              destPath: destPath
-              lang: lang
-            }
-            @compile(_options, _next)
-            ), (err) ->
-            next()
-        else
+      if matches = pathname.match(options.grepExts)
+        async.each options.testExts, ((_ext, _next) =>
+          fileRelPath = pathname.replace(options.grepExts, _ext)
+          filePath = path.join(options.src, fileRelPath)
+          destPath = "#{options.tmp}/#{lang}#{fileRelPath}"
+          _options = {
+            filePath: filePath
+            destPath: destPath
+            lang: lang
+          }
+          @compile(_options, _next)
+          ), (err) ->
           next()
+      else
+        next()
 
     return _middleware
 
