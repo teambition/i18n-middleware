@@ -1,4 +1,3 @@
-i18n = require('i18n')
 fs = require('graceful-fs')
 path = require('path')
 {exec} = require('child_process')
@@ -46,8 +45,7 @@ class I18nCli
     [lang] = @args
     return errorQuit('missing language option') unless lang?
     i18nMiddleware = new I18nMiddleware()
-    _i18n = i18nMiddleware.i18n
-    dict = _i18n.getCatalog(lang)
+    dict = i18nMiddleware.dicts[lang]
     return errorQuit("missing language locales file [#{lang}.json]") unless dict
     srcs = ['src/scripts', 'src/templates']
     textExts = ['*.coffee', '*.html']
@@ -70,7 +68,7 @@ class I18nCli
         fs.readFile file, 'utf8', (err, text) ->
           for raw, tag of $revDict
             if revert  # revert the raw, tag order
-              text = text.replace(new RegExp(quote("{{__#{tag}}}")), raw)
+              text = text.replace(new RegExp(quote("{{__#{tag}}}"), 'g'), raw)
             else
               text = text.replace(new RegExp(raw, 'g'), "{{__#{tag}}}")
           fs.writeFile(file, text, next)
