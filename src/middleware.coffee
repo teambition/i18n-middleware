@@ -7,18 +7,22 @@ mkdirp = require('mkdirp')
 
 class I18nMiddleware
 
+  @defaultOptions: {
+    defaultLocale: 'en'
+    cookie: 'lang'
+    directory: "#{process.cwd()}/src/locales"
+    src: "#{process.cwd()}/src"
+    tmp: "#{process.cwd()}/tmp/i18n"
+    grepExts: /(\.js|\.html)$/
+    testExts: ['.coffee', '.html']
+    pattern: /\{\{__([\s\S]+?)\}\}/g
+    force: false
+    updateFiles: false
+  }
+
   constructor: (options) ->
     @options = _.extend(
-      defaultLocale: 'en'
-      cookie: 'lang'
-      directory: "#{process.cwd()}/src/locales"
-      src: "#{process.cwd()}/src"
-      tmp: "#{process.cwd()}/tmp/i18n"
-      grepExts: /(\.js|\.html)$/
-      testExts: ['.coffee', '.html']
-      pattern: /\{\{__([\s\S]+?)\}\}/g
-      force: false
-      updateFiles: false
+      I18nMiddleware.defaultOptions
       options or {}
     )
     unless @options.locales
@@ -92,17 +96,27 @@ class I18nMiddleware
             callback()
 
   guessLanguage: (req, res = null, next = ->) =>
-    languageHeader = req.headers['accept-language']
-    language = null
+    @_language = language or I18nMiddleware.guess(req, @options)
 
-    if @options.cookie? # Guess from cookie
-      if req.cookies?.lang?
-        language = req.cookies[@options.cookie] if req.cookies[@options.cookie] in @options.locales
-      else if req.headers?.cookie?
-        req.headers.cookie.split(';').every (cookieString) =>
+    req.locale = @_language or ''
+
+    next()
+
+  @guess: (handle, options) ->
+    _options = _.extend(
+      I18nMiddleware.defaultOptions
+      options or {}
+    )
+    languageHeader = handle.headers['accept-language']
+    language = null
+    if _options.cookie? # Guess from cookie
+      if handle.cookies?.lang?
+        language = handle.cookies[_options.cookie] if handle.cookies[_options.cookie] in _options.locales
+      else if handle.headers?.cookie?
+        handle.headers.cookie.split(';').every (cookieString) =>
           [key, val] = cookieString.split('=')
-          if key is @options.cookie
-            language = val if val in  @options.locales
+          if key is _options.cookie
+            language = val if val in  _options.locales
             return false
           return true
 
@@ -110,19 +124,15 @@ class I18nMiddleware
       languageHeader.split(',').every (l) =>
         lang = l.split(';')[0]
         subLang = lang.split('-')[0]
-        if lang in @options.locales
+        if lang in _options.locales
           language = lang
           return false
-        if subLang in @options.locales
+        if subLang in _options.locales
           language = subLang
           return false
         return true
 
-    @_language = language or @options.defaultLocale
-
-    req.locale = @_language or ''
-
-    next()
+    return language or _options.defaultLocale
 
   guess: (req) =>
     @guessLanguage(req)
