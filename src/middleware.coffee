@@ -96,7 +96,7 @@ class I18nMiddleware
             callback()
 
   guessLanguage: (req, res = null, next = ->) =>
-    @_language = language or I18nMiddleware.guess(req, @options)
+    @_language = I18nMiddleware.guess(req, @options)
 
     req.locale = @_language or ''
 
