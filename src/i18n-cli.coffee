@@ -117,6 +117,7 @@ class I18nCli
       fs.readdir directory, (err, langFiles) ->
         errorQuit(err) if err?
         async.each langFiles, ((langFile, next) ->
+          return next() unless path.extname(langFile) is '.json'
           _compile(langFile[..langFile.length-path.extname(langFile).length-1], next)
           ), (err) ->
           errorQuit(err) if err?
