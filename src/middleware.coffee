@@ -27,7 +27,8 @@ class I18nMiddleware
     )
     unless @options.locales
       try
-        langFiles = fs.readdirSync(@options.directory)
+        langFiles = fs.readdirSync(@options.directory).filter (fileName) ->
+          if path.extname(fileName) is ".json" then true else false
         @options.locales = (f[..f.length-path.extname(f).length-1] for f in langFiles)
       catch
         @options.locales = []
@@ -40,7 +41,7 @@ class I18nMiddleware
     options = @options
     dictPath = path.join(process.cwd(), dictPath) if dictPath?
     try
-      dict = require(path.join(dictPath or options.directory, locale))
+      dict = require(path.resolve(path.join(dictPath or options.directory, locale)))
     catch e
       dict = {}
     for k, v of dict
