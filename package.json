@@ -29,6 +29,6 @@
     "graceful-logger": "~0.0.2"
   },
   "devDependencies": {
-    "cake-dog": "~0.1.11"
+    "cake-dog": "~0.1.15"
   }
 }
