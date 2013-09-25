@@ -62,7 +62,9 @@ class I18nMiddleware
 
   __: (param) ->
     {phrase, locale} = param
-    return @dicts[locale][phrase]
+    if @dicts[locale]?
+      return @dicts[locale][phrase]
+    return @dicts[@options.defaultLocale]?[phrase]
 
   # ops: filePath, destPath, lang
   compile: (ops, callback = ->) ->
