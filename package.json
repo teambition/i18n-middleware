@@ -26,9 +26,9 @@
     "async": "~0.2.9",
     "mkdirp": "~0.3.5",
     "graceful-fs": "~2.0.0",
-    "graceful-logger": "~0.0.2"
+    "graceful-logger": "~0.1.0"
   },
   "devDependencies": {
-    "cake-dog": "~0.1.15"
+    "cake-dog": "~0.2.0"
   }
 }
