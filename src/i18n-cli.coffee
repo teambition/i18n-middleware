@@ -81,13 +81,13 @@ class I18nCli
 
   # compile all source code to converted format
   compile: ->
-    [lang, directory, src, destDir] = @args
+    [lang, directory, src, destDir, textExts] = @args
     lang = lang or 'all'
     directory = directory or "#{process.cwd()}/src/locales"
     src = src or 'src'
     destDir = destDir or "#{process.cwd()}/tmp/i18n"
-    ignores = ignores?.split(',') or ['node_modules', 'bower_components', 'bower.json', 'package.json', 'locales', 'images']
-    textExts = ['*.coffee', '*.html']
+    ignores = ['node_modules', 'bower_components', 'bower.json', 'package.json', 'locales', 'images']
+    textExts = textExts?.split(',') or ['*.coffee', '*.html', '*.less']
 
     options = {}
     options.force = true
@@ -103,8 +103,7 @@ class I18nCli
         return errorQuit if err?
         async.each files, ((file, next) ->
           for ignore in ignores
-            if file.indexOf(path.join(src, ignore)) is 0
-              return next()
+            return next() if file.indexOf(path.join(src, ignore)) is 0
           i18nMiddleware.compile({
             filePath: file
             destPath: _getDest(lang, file)
