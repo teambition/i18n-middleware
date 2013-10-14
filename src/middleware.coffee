@@ -13,8 +13,8 @@ class I18nMiddleware
     directory: "#{process.cwd()}/src/locales"
     src: "#{process.cwd()}/src"
     tmp: "#{process.cwd()}/tmp/i18n"
-    grepExts: /(\.js|\.html)$/
-    testExts: ['.coffee', '.html']
+    grepExts: /(\.js|\.html|\.css)$/
+    testExts: ['.coffee', '.html', '.less']
     pattern: /\{\{__([\s\S]+?)\}\}/g
     force: false
     updateFiles: false
