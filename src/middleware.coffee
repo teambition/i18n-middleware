@@ -13,8 +13,8 @@ class I18nMiddleware
     directory: "#{process.cwd()}/src/locales"
     src: "#{process.cwd()}/src"
     tmp: "#{process.cwd()}/tmp/i18n"
-    grepExts: /(\.js|\.html|\.css)$/
-    testExts: ['.coffee', '.html', '.less']
+    grepExts: /(\.js|\.html)$/
+    testExts: ['.coffee', '.html']
     pattern: /\{\{__([\s\S]+?)\}\}/g
     force: false
     updateFiles: false
@@ -22,7 +22,7 @@ class I18nMiddleware
 
   constructor: (options) ->
     @options = _.extend(
-      I18nMiddleware.defaultOptions
+      _.clone(I18nMiddleware.defaultOptions)
       options or {}
     )
     unless @options.locales
