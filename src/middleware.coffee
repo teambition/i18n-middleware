@@ -60,9 +60,11 @@ class I18nMiddleware
       @dicts[locale] = @_dict(locale)
     return @dicts
 
-  __: (param) ->
+  __: (param, value) ->
     {phrase, locale} = param
     if @dicts[locale]?
+      if value
+        return @dicts[locale][phrase].replace('%s', value)
       return @dicts[locale][phrase]
     return @dicts[@options.defaultLocale]?[phrase]
 
