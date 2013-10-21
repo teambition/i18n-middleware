@@ -62,11 +62,23 @@ class I18nMiddleware
 
   __: (param, value) ->
     {phrase, locale} = param
+
+    _replace = (phraseVal)->
+      return phraseVal unless phraseVal?
+      switch typeof value
+        when 'string'
+          return phraseVal.replace('%s', value)
+        when 'object'
+          if value.length? and value.length > 0
+            i = -1
+            return phraseVal.replace /\%s/g, ->
+              i +=1
+              return value[i] || ''
+      return phraseVal
+
     if @dicts[locale]?
-      if value
-        return @dicts[locale][phrase].replace('%s', value)
-      return @dicts[locale][phrase]
-    return @dicts[@options.defaultLocale]?[phrase]
+      return _replace(@dicts[locale][phrase])
+    return _replace(@dicts[@options.defaultLocale]?[phrase])
 
   # ops: filePath, destPath, lang
   compile: (ops, callback = ->) ->
