@@ -66,7 +66,7 @@ class I18nMiddleware
     _replace = (phraseVal)->
       return phraseVal unless phraseVal?
       switch typeof value
-        when 'string'
+        when 'string', 'number'
           return phraseVal.replace('%s', value)
         when 'object'
           if value.length? and value.length > 0
@@ -132,7 +132,7 @@ class I18nMiddleware
       else if handle.headers?.cookie?
         handle.headers.cookie.split(';').every (cookieString) =>
           [key, val] = cookieString.split('=')
-          if key is _options.cookie
+          if key.trim() is _options.cookie
             language = val if val in  _options.locales
             return false
           return true
