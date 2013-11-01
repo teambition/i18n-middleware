@@ -22,7 +22,7 @@ app.use(require('i18n-middleware')(i18nOptions))  # register middleware
 * `cookie` The language cookie title, default is 'lang'
 * `src` Source code path, default is 'src'
 * `tmp` Temporary file path, default is 'tmp/i18n'
-* `pattern` The pattern used for replacement, default is /\{\{__([\s\S]+?)\}\}/g (e.g. {{__Hello}})
+* `pattern` The pattern used for replacement, default is `/\{\{__([\s\S]+?)\}\}/g` (e.g. `{{__Hello}}`)
 * `force` Force recompile file, default is false
 
 ## i18n-cli
